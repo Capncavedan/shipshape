@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Capncavedan/shipshape.png?branch=master)](https://travis-ci.org/Capncavedan/shipshape)
+
 Shipshape
 =========
 
