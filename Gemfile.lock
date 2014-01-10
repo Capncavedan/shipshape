@@ -32,6 +32,7 @@ GEM
       coderay (~> 1.0)
       method_source (~> 0.8)
       slop (~> 3.4)
+    rake (0.9.6)
     rb-fsevent (0.9.4)
     rb-inotify (0.9.3)
       ffi (>= 0.5.0)
@@ -55,5 +56,6 @@ DEPENDENCIES
   faraday
   guard-rspec
   nokogiri
+  rake
   rspec
   ruby_gntp

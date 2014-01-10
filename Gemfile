@@ -4,7 +4,11 @@ ruby "2.0.0"
 
 gem "faraday"
 gem "nokogiri"
-gem "rspec"
+
+group :test do
+  gem "rspec"
+  gem "rake"
+end
 
 group :development do
   gem 'guard-rspec', require: false
