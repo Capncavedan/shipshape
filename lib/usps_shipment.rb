@@ -6,6 +6,52 @@ class Shipshape::USPSShipment
 
   def initialize(str)
     @tracking_number = str
+    @xml ||= Nokogiri::XML.parse(get_xml)
+  end
+
+  def timestamp(str=nil)
+    str ||= self.track_summary
+    case str
+    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d, \d{1,2}:\d\d [ap]m)\b/
+      # January 2, 2014, 8:27 pm
+      DateTime.parse $1
+    when /\b(\d{1,2}:\d\d [ap]m) on ([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
+      # 3:21 pm on January 4, 2014
+      DateTime.parse "#{$2}, #{$1}"
+    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
+      # January 4, 2014
+      DateTime.parse $1
+    else
+      nil
+    end
+  end
+
+  def status
+    case track_summary
+    when /^(Arrived)/
+      "#{$1} #{location}"
+    else
+      nil
+    end
+  end
+
+  def location
+    case track_summary
+    when /\b([A-Z\ ]+, [A-Z]{2} \d{5})\b/
+      # SECAUCUS, NJ 07094
+      # DES MOINES, IA 50318.
+      $1.strip
+    else
+      nil
+    end
+  end
+
+  def track_summary
+    @xml.xpath('//TrackSummary').first.content
+  end
+
+  def get_xml
+    ""
   end
 
 
