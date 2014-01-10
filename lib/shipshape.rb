@@ -1,0 +1,3 @@
+class Shipshape
+
+end
