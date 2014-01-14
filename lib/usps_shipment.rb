@@ -6,12 +6,11 @@ class Shipshape::USPSShipment
 
   def initialize(str)
     @tracking_number = str
-    @xml ||= Nokogiri::XML.parse(get_xml)
+    @xml = get_xml
   end
 
-  def timestamp(str=nil)
-    str ||= self.track_summary
-    case str
+  def timestamp
+    case self.track_summary
     when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d, \d{1,2}:\d\d [ap]m)\b/
       # January 2, 2014, 8:27 pm
       DateTime.parse $1
@@ -51,23 +50,18 @@ class Shipshape::USPSShipment
   end
 
   def get_xml
-    ""
+    Nokogiri::XML.parse(tracking_response)
   end
 
-
-  def track
-    # tracking_number = '9274899999158703477863'  # AAAs
-    tracking_number = '9400110200881038748491'  # AAs
-
+  def tracking_response
     conn = Faraday.new(:url => "http://production.shippingapis.com") do |faraday|
       faraday.request  :url_encoded             # form-encode POST params
       faraday.response :logger                  # log requests to STDOUT
       faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
     end
-
     builder = Nokogiri::XML::Builder.new do |xml|
       xml.TrackRequest("USERID" => ENV['USPS_USERID']) {
-        xml.TrackID("ID" => tracking_number)
+        xml.TrackID("ID" => @tracking_number)
       }
     end
     resp = conn.get do |req|
@@ -75,26 +69,8 @@ class Shipshape::USPSShipment
       req.params["API"] = "TrackV2"
       req.params["XML"] = builder.to_xml
     end
-
-    result_xml = Nokogiri::XML.parse(resp.body)
-
-    puts result_xml
-
-    puts "---------"
-
-    summary = nil
-    result_xml.xpath('//TrackSummary').each do |n|
-      summary = n.content
-      puts "#{n.content}  ::  #{get_date_time(n.content)}  ::  #{get_location(n.content)}"
-    end
-
-    result_xml.xpath('//TrackDetail').each do |n|
-      puts "#{n.content}  ::  #{get_date_time(n.content)}  ::  #{get_location(n.content)}"
-    end
-
-    puts "\nExpected delivery date: #{expected_delivery_date(summary)}"
+    resp.body
   end
-
 
   def expected_delivery_date(str)
     # Your item arrived at the Post Office at 7:57 am on January 6, 2014 in DES MOINES, IA 50311. The Postal Service expects to deliver the item on Tuesday, January 7, 2014. Information, if available, is updated periodically throughout the day. Please check again later.
@@ -132,6 +108,5 @@ class Shipshape::USPSShipment
       nil
     end
   end
-
 
 end

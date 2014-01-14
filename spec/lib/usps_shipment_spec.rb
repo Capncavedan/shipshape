@@ -7,7 +7,7 @@ describe "Shipshape::USPSShipment" do
 
   context "instance methods" do
     before do
-      Shipshape::USPSShipment.any_instance.stub(:get_xml).and_return(
+      Shipshape::USPSShipment.any_instance.stub(:tracking_response).and_return(
 <<-XML
 <?xml version="1.0" encoding="UTF-8"?>
 <TrackResponse>
