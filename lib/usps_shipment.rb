@@ -1,6 +1,8 @@
 require 'faraday'
 require 'nokogiri'
 require 'date'
+require 'zip-codes'
+require 'tzinfo'
 
 class Shipshape::USPSShipment
 
@@ -10,16 +12,32 @@ class Shipshape::USPSShipment
   end
 
   def timestamp
-    case self.track_summary
+    time_string = case track_summary
     when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d, \d{1,2}:\d\d [ap]m)\b/
       # January 2, 2014, 8:27 pm
-      DateTime.parse $1
+      $1
     when /\b(\d{1,2}:\d\d [ap]m) on ([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
       # 3:21 pm on January 4, 2014
-      DateTime.parse "#{$2}, #{$1}"
+      "#{$2}, #{$1}"
     when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
       # January 4, 2014
-      DateTime.parse $1
+      $1
+    else
+      nil
+    end
+
+    datetime = DateTime.parse time_string
+
+    if timestamp_timezone
+      timestamp_timezone.local_to_utc(datetime)
+    else
+      datetime
+    end
+  end
+
+  def timestamp_timezone
+    if location =~ /(\d{5})\Z/
+     TZInfo::Timezone.get ZipCodes.identify($1)[:time_zone]
     else
       nil
     end
@@ -54,12 +72,12 @@ class Shipshape::USPSShipment
   end
 
   def tracking_response
-    conn = Faraday.new(:url => "http://production.shippingapis.com") do |faraday|
+    conn = Faraday.new(url: "http://production.shippingapis.com") do |faraday|
       faraday.request  :url_encoded             # form-encode POST params
       faraday.response :logger                  # log requests to STDOUT
       faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
     end
-    builder = Nokogiri::XML::Builder.new do |xml|
+    tracking_request = Nokogiri::XML::Builder.new do |xml|
       xml.TrackRequest("USERID" => ENV['USPS_USERID']) {
         xml.TrackID("ID" => @tracking_number)
       }
@@ -67,7 +85,7 @@ class Shipshape::USPSShipment
     resp = conn.get do |req|
       req.url '/ShippingAPI.dll'
       req.params["API"] = "TrackV2"
-      req.params["XML"] = builder.to_xml
+      req.params["XML"] = tracking_request.to_xml
     end
     resp.body
   end

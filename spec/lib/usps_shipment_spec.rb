@@ -1,11 +1,9 @@
 require 'spec_helper'
 
 describe "Shipshape::USPSShipment" do
-  it "works" do
-    shipment = Shipshape::USPSShipment.new("xyz")
-  end
 
   context "instance methods" do
+
     before do
       Shipshape::USPSShipment.any_instance.stub(:tracking_response).and_return(
 <<-XML
@@ -31,7 +29,12 @@ XML
 
     it "returns a timestamp" do
       # TODO: account for timezone
-      @shipment.timestamp.to_s.should eql "2014-01-02T20:27:00+00:00"
+      @shipment.timestamp.should eql DateTime.parse("2014-01-03T01:27:00+00:00")
+    end
+
+    it "returns a timezone" do
+      @shipment.timestamp_timezone.class.to_s.should eql("TZInfo::DataTimezone")
+      @shipment.timestamp_timezone.to_s.should eql "America - New York"
     end
 
   end
