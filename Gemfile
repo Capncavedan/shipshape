@@ -1,7 +1,5 @@
 source "https://rubygems.org"
 
-ruby "2.3.1"
-
 gem "faraday"
 gem "nokogiri"
 gem "zip-codes", "~> 0.2"
