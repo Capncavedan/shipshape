@@ -47,6 +47,8 @@ class Shipshape::USPSShipment
     case track_summary
     when /^(Arrived)/
       "#{$1} #{location}"
+    when /was delivered/
+      "Delivered #{location}"
     else
       nil
     end
