@@ -5,7 +5,7 @@ describe "Shipshape::USPSShipment" do
   context "instance methods" do
 
     before do
-      Shipshape::USPSShipment.any_instance.stub(:tracking_response).and_return(
+      allow_any_instance_of(Shipshape::USPSShipment).to receive(:tracking_response).and_return(
 <<-XML
 <?xml version="1.0" encoding="UTF-8"?>
 <TrackResponse>
@@ -20,21 +20,21 @@ XML
     end
 
     it "returns a location" do
-      @shipment.location.should eql "SECAUCUS, NJ 07094"
+      expect(@shipment.location).to eql "SECAUCUS, NJ 07094"
     end
 
     it "returns a status" do
-      @shipment.status.should eql "Arrived SECAUCUS, NJ 07094"
+      expect(@shipment.status).to eql "Arrived SECAUCUS, NJ 07094"
     end
 
     it "returns a timestamp" do
       # TODO: account for timezone
-      @shipment.timestamp.should eql DateTime.parse("2014-01-03T01:27:00+00:00")
+      expect(@shipment.timestamp).to eql DateTime.parse("2014-01-03T01:27:00+00:00")
     end
 
     it "returns a timezone" do
-      @shipment.timestamp_timezone.class.to_s.should eql("TZInfo::DataTimezone")
-      @shipment.timestamp_timezone.to_s.should eql "America - New York"
+      expect(@shipment.timestamp_timezone.class.to_s).to eql "TZInfo::DataTimezone"
+      expect(@shipment.timestamp_timezone.to_s).to eql "America - New York"
     end
 
   end

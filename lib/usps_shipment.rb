@@ -37,7 +37,7 @@ class Shipshape::USPSShipment
 
   def timestamp_timezone
     if location =~ /(\d{5})\Z/
-     TZInfo::Timezone.get ZipCodes.identify($1)[:time_zone]
+      TZInfo::Timezone.get ZipCodes.identify($1)[:time_zone]
     else
       nil
     end
