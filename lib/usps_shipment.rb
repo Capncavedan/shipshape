@@ -12,22 +12,7 @@ class Shipshape::USPSShipment
   end
 
   def timestamp
-    time_string = case track_summary
-    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d, \d{1,2}:\d\d [ap]m)\b/
-      # January 2, 2014, 8:27 pm
-      $1
-    when /\b(\d{1,2}:\d\d [ap]m) on ([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
-      # 3:21 pm on January 4, 2014
-      "#{$2}, #{$1}"
-    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
-      # January 4, 2014
-      $1
-    else
-      nil
-    end
-
-    datetime = DateTime.parse time_string
-
+    datetime = DateTime.parse track_summary
     if timestamp_timezone
       timestamp_timezone.local_to_utc(datetime)
     else
@@ -45,12 +30,12 @@ class Shipshape::USPSShipment
 
   def status
     case track_summary
-    when /^(Arrived)/
-      "#{$1} #{location}"
+    when /^Arrived/
+      "Arrived #{location}"
     when /was delivered/
       "Delivered #{location}"
-    else
-      nil
+    when /Your item departed our USPS facility/
+      "Departed #{location}"
     end
   end
 
