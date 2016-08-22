@@ -8,7 +8,6 @@ class Shipshape::USPSShipment
 
   def initialize(str)
     @tracking_number = str
-    @xml = get_xml
   end
 
   def timestamp
@@ -21,7 +20,7 @@ class Shipshape::USPSShipment
   end
 
   def timestamp_timezone
-    if location =~ /(\d{5})\Z/
+    if location.to_s =~ /(\d{5})\Z/
       TZInfo::Timezone.get ZipCodes.identify($1)[:time_zone]
     else
       nil
@@ -51,30 +50,7 @@ class Shipshape::USPSShipment
   end
 
   def track_summary
-    @xml.xpath('//TrackSummary').first.content
-  end
-
-  def get_xml
-    Nokogiri::XML.parse(tracking_response)
-  end
-
-  def tracking_response
-    conn = Faraday.new(url: "http://production.shippingapis.com") do |faraday|
-      faraday.request  :url_encoded             # form-encode POST params
-      faraday.response :logger                  # log requests to STDOUT
-      faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
-    end
-    tracking_request = Nokogiri::XML::Builder.new do |xml|
-      xml.TrackRequest("USERID" => ENV['USPS_USERID']) {
-        xml.TrackID("ID" => @tracking_number)
-      }
-    end
-    resp = conn.get do |req|
-      req.url '/ShippingAPI.dll'
-      req.params["API"] = "TrackV2"
-      req.params["XML"] = tracking_request.to_xml
-    end
-    resp.body
+    xml.xpath('//TrackSummary').first.content
   end
 
   def expected_delivery_date(str)
@@ -87,30 +63,34 @@ class Shipshape::USPSShipment
     end
   end
 
-  def get_date_time(str)
-    case str
-    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d, \d{1,2}:\d\d [ap]m)\b/
-      # January 2, 2014, 8:27 pm
-      DateTime.parse $1
-    when /\b(\d{1,2}:\d\d [ap]m) on ([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
-      # 3:21 pm on January 4, 2014
-      DateTime.parse "#{$2}, #{$1}"
-    when /\b([A-Za-z]+ \d{1,2}, \d\d\d\d)\b/
-      # January 4, 2014
-      DateTime.parse $1
-    else
-      nil
+
+  private
+
+  def xml
+    @xml ||= Nokogiri::XML.parse(tracking_response)
+  end
+
+  def http_response
+    @http_response ||= http_connection.get do |request|
+      request.url '/ShippingAPI.dll'
+      request.params["API"] = "TrackV2"
+      request.params["XML"] = tracking_request.to_xml
     end
   end
 
-  def get_location(str)
-    case str
-    when /\b([A-Z\ ]+, [A-Z]{2} \d{5})\b/
-      # SECAUCUS, NJ 07094
-      # DES MOINES, IA 50318.
-      $1.strip
-    else
-      nil
+  def tracking_request
+    Nokogiri::XML::Builder.new do |xml|
+      xml.TrackRequest("USERID" => ENV['USPS_USERID']) {
+        xml.TrackID("ID" => @tracking_number)
+      }
+    end
+  end
+
+  def http_connection
+    Faraday.new(url: "http://production.shippingapis.com") do |faraday|
+      faraday.request  :url_encoded             # form-encode POST params
+      faraday.response :logger                  # log requests to STDOUT
+      faraday.adapter  Faraday.default_adapter  # make requests with Net::HTTP
     end
   end
 
