@@ -70,6 +70,10 @@ class Shipshape::USPSShipment
     @xml ||= Nokogiri::XML.parse(tracking_response)
   end
 
+  def tracking_response
+    http_response.body
+  end
+
   def http_response
     @http_response ||= http_connection.get do |request|
       request.url '/ShippingAPI.dll'
